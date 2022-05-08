@@ -21,7 +21,7 @@ label_map = {
 
 class KittiDetection2D(Dataset):
 
-    def __init__(self, root, transforms=None):
+    def __init__(self, root, S=(11,24), B=2, C=9, transforms=None):
         super(KittiDetection2D, self).__init__()
         self.image_dir = osp(root, "image_2")
         self.label_dir = osp(root, "label_2")
@@ -30,15 +30,22 @@ class KittiDetection2D(Dataset):
         self.transforms = transforms
         self.h = 384
         self.w = 1248
-        self.S = (11,24)
+        self.S = S
+        self.B = B
+        self.C = C
 
     def __len__(self):
         return len(self.image_list)
 
     def __getitem__(self, index):
+        """
+        return:
+            image (Tensor): Image tensor of size [N, H, W]
+            target (Tensor): target tensor of size [S[0], S[1], C+B*5]
+        """
         image = Image.open(osp(self.image_dir, self.image_list[index]))
         label_pth = osp(self.label_dir, self.label_list[index])
-        target = torch.zeros(11, 24, 14)
+        target = torch.zeros(self.S[0], self.S[1], self.C+5*self.B)
         with open(label_pth, 'r') as f:
             for i in f.readlines():
                 obj_class, x1, y1, x2, y2 = self._parse_label(i)
