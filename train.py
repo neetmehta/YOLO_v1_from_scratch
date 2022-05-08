@@ -7,7 +7,8 @@ from tqdm import tqdm
 from loss import YoloLoss
 from model import YOLOv1
 from data import KittiDetection2D
-from utils import read_yaml
+from utils import *
+
 TRAIN_ROOT = r"E:\Deep Learning Projects\datasets\kitti_object_detection\Kitti\raw\training"
 TEST_ROOT = r"E:\Deep Learning Projects\datasets\kitti_object_detection\Kitti\raw\testing"
 EPOCHS = 200
@@ -17,6 +18,10 @@ NUM_WORKERS = 0
 PIN_MEMORY = False
 TRAIN_VAL_SPLIT = 0.01
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+S = (6,20)
+B = 2
+C = 9
 
 img_transforms = transforms.Compose([transforms.Resize((384,1248)), transforms.ToTensor()])
 
@@ -52,3 +57,17 @@ for epoch in range(EPOCHS):
         loop.set_postfix(loss=loss.item())
     
     print(f"Mean loss was {sum(mean_loss)/len(mean_loss)}")
+
+    print("starting validation ...")
+    loop = tqdm(val_dataloader)
+    mean_loss = []
+    for image, target in loop:
+        
+        image, target = image.to(device), target.to(device)
+        pred = model(image)
+        loss = criterion(pred, target)
+        mean_loss.append(loss.item())
+
+    print(f"Mean validation loss was {sum(mean_loss)/len(mean_loss)}")
+
+
