@@ -21,7 +21,7 @@ label_map = {
 
 class KittiDetection2D(Dataset):
 
-    def __init__(self, root, S=(11,24), B=2, C=9, transforms=None):
+    def __init__(self, root, S=(6,20), B=2, C=9, transforms=None):
         super(KittiDetection2D, self).__init__()
         self.image_dir = osp(root, "image_2")
         self.label_dir = osp(root, "label_2")

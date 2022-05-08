@@ -12,19 +12,21 @@ TRAIN_ROOT = r"E:\Deep Learning Projects\datasets\kitti_object_detection\Kitti\r
 TEST_ROOT = r"E:\Deep Learning Projects\datasets\kitti_object_detection\Kitti\raw\testing"
 EPOCHS = 200
 LEARNING_RATE = 1e-5
-BATCH_SIZE = 1
-TRAIN_VAL_SPLIT = 0.8
-device = 'cpu' if torch.cuda.is_available() else 'cpu'
+BATCH_SIZE = 2
+NUM_WORKERS = 0
+PIN_MEMORY = False
+TRAIN_VAL_SPLIT = 0.01
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 img_transforms = transforms.Compose([transforms.Resize((384,1248)), transforms.ToTensor()])
 
 dataset = KittiDetection2D(TRAIN_ROOT, transforms=img_transforms)
-train_dataset_len = int(0.8*len(dataset))
+train_dataset_len = int(TRAIN_VAL_SPLIT*len(dataset))
 val_dataset_len = len(dataset) - train_dataset_len
 train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_dataset_len, val_dataset_len])
 
-train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-val_dataloader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=True)
+train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=PIN_MEMORY, num_workers=NUM_WORKERS, drop_last=True)
+val_dataloader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=PIN_MEMORY, num_workers=NUM_WORKERS, drop_last=True)
 
 model_cfg = read_yaml('model.yaml')
 model = YOLOv1(model_cfg).to(device)
@@ -34,14 +36,19 @@ scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
 
 for epoch in range(EPOCHS):
     loop = tqdm(train_dataloader)
+    mean_loss = []
     for image, target in loop:
         
         image, target = image.to(device), target.to(device)
         pred = model(image)
         loss = criterion(pred, target)
+        mean_loss.append(loss.item())
+        optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
 
         loop.set_description(f"Epoch [{epoch}/{EPOCHS}]")
         loop.set_postfix(loss=loss.item())
+    
+    print(f"Mean loss was {sum(mean_loss)/len(mean_loss)}")

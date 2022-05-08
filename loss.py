@@ -3,7 +3,7 @@ from torch import nn
 from utils import iou
 
 class YoloLoss(nn.Module):
-    def __init__(self, S=(11,24), B=2, C=9, coord=5, noobj=0.5) -> None:
+    def __init__(self, S=(6,20), B=2, C=9, coord=5, noobj=0.5) -> None:
         super(YoloLoss, self).__init__()
         self.mse_loss = nn.MSELoss()
         self.S = S
@@ -29,29 +29,35 @@ class YoloLoss(nn.Module):
         pred_coord = pred_best_box[..., 0:2]
         target_coord = target_box[..., 0:2]
         coord_loss = self.coord*self.mse_loss(torch.flatten(pred_best_box, 0, -2), torch.flatten(target_box, 0, -2))
-        print('cord loss', coord_loss)
+        
 
         ## box loss
         
         pred_h_w = torch.sign(pred_best_box[...,2:4])*torch.sqrt(torch.abs(pred_best_box[..., 2:4] + 1e-6)) # [N, S[0], S[1], 2]
         target_h_w = torch.sqrt(target_box[..., 2:4]) #[N, S[0], S[1], 2]
         box_loss = self.coord*self.mse_loss(torch.flatten(pred_h_w, 0, -2), torch.flatten(target_h_w, 0, -2))
-        print('box loss', box_loss)
+        
         ## object loss
         pred_obj = exist_box_identity*(best_box*pred[...,14:15] + (1-best_box)*pred[..., 9:10])
 
         object_loss = self.mse_loss(torch.flatten(pred_obj, 0, -2), torch.flatten(exist_box_identity, 0, -2))
-        print('obj loss', object_loss)
+        
         ## no object loss
 
         noobject_loss = self.mse_loss(torch.flatten((1-exist_box_identity)*pred[...,9:10], 0, -2), torch.flatten((1-exist_box_identity)*target[...,9:10], 0, -2)) + self.mse_loss(torch.flatten((1-exist_box_identity)*pred[...,9:10], 0, -2), torch.flatten((1-exist_box_identity)*target[...,9:10], 0, -2))      ###### CHECK
         noobject_loss = self.noobj*object_loss
-        print('noobj loss', noobject_loss)
+        
         ## class loss
         pred_class = exist_box_identity*pred[..., :9]
         target_class = exist_box_identity*target[..., :9]
 
         class_loss = self.mse_loss(torch.flatten(pred_class, 0, -2), torch.flatten(target_class, 0, -2))
-        print('class loss', class_loss)
+
+        # print('cord loss', coord_loss)
+        # print('box loss', box_loss)
+        # print('obj loss', object_loss)
+        # print('noobj loss', noobject_loss)
+        # print('class loss', class_loss)
+        
         return box_loss + coord_loss + object_loss + noobject_loss + class_loss
         
