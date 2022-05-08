@@ -26,14 +26,14 @@ class YOLOv1(nn.Module):
 
     def forward(self, x):
         x = self.backbone(x)
-        print(x.shape)
+        flat = nn.Flatten()
+        x = flat(x)
         x = self.fcl(x)
         x = x.reshape(-1, self.S[0], self.S[1], self.C + self.B*5)
         return x
 
     def _create_conv_layer(self, in_channels: int, out_channels: int, kernal: int, stride: int, padding: int):
-        return nn.Conv2d(in_channels, out_channels, kernal, stride, padding)
+        return nn.Sequential(nn.Conv2d(in_channels, out_channels, kernal, stride, padding, bias=False), nn.BatchNorm2d(out_channels), nn.LeakyReLU(0.1))
 
     def _create_fcl(self, S: tuple, B: int, C: int, fcl_out: int=4096):
         return nn.Sequential(nn.Flatten(), nn.Linear(1024*S[0]*S[1], fcl_out), nn.Dropout(0.0), nn.LeakyReLU(0.1), nn.Linear(fcl_out, S[0]*S[1]*(self.C + self.B*5)))
-
