@@ -2,7 +2,7 @@ import torch
 from torch import nn
 
 class YOLOv1(nn.Module):
-    def __init__(self, model_cfg, in_channels=3, fcl_out=4096, S=(11,24), B=2, num_classes=9):
+    def __init__(self, model_cfg, in_channels=3, fcl_out=496, S=(7,7), B=2, num_classes=20):
         super(YOLOv1, self).__init__()
         layer_list = []
         for block in model_cfg['architecture']:
@@ -26,6 +26,7 @@ class YOLOv1(nn.Module):
 
     def forward(self, x):
         x = self.backbone(x)
+        print(x.shape)
         x = self.fcl(x)
         x = x.reshape(-1, self.S[0], self.S[1], self.C + self.B*5)
         return x
@@ -34,5 +35,5 @@ class YOLOv1(nn.Module):
         return nn.Conv2d(in_channels, out_channels, kernal, stride, padding)
 
     def _create_fcl(self, S: tuple, B: int, C: int, fcl_out: int=4096):
-        return nn.Sequential(nn.Flatten(), nn.Linear(1024*S[0]*S[1], fcl_out), nn.Dropout(0.0), nn.LeakyReLU(0.1), nn.Linear(4096, S[0]*S[1]*(self.C + self.B*5)))
+        return nn.Sequential(nn.Flatten(), nn.Linear(1024*S[0]*S[1], fcl_out), nn.Dropout(0.0), nn.LeakyReLU(0.1), nn.Linear(fcl_out, S[0]*S[1]*(self.C + self.B*5)))
 

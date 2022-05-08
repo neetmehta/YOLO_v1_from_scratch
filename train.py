@@ -16,7 +16,7 @@ BATCH_SIZE = 1
 TRAIN_VAL_SPLIT = 0.8
 device = 'cpu' if torch.cuda.is_available() else 'cpu'
 
-img_transforms = transforms.Compose([transforms.Resize((384,1248)), transforms.ToTensor()])
+img_transforms = transforms.Compose([transforms.Resize((448,448)), transforms.ToTensor()])
 
 dataset = KittiDetection2D(TRAIN_ROOT, transforms=img_transforms)
 train_dataset_len = int(0.8*len(dataset))
