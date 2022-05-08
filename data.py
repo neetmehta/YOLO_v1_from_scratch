@@ -45,7 +45,7 @@ class KittiDetection2D(Dataset):
         """
         image = Image.open(osp(self.image_dir, self.image_list[index]))
         label_pth = osp(self.label_dir, self.label_list[index])
-        target = torch.zeros(self.S[0], self.S[1], self.C+5*self.B)
+        target = torch.zeros(self.S[0], self.S[1], self.C+5)
         with open(label_pth, 'r') as f:
             for i in f.readlines():
                 obj_class, x1, y1, x2, y2 = self._parse_label(i)
