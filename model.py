@@ -2,7 +2,7 @@ import torch
 from torch import nn
 
 class YOLOv1(nn.Module):
-    def __init__(self, model_cfg, in_channels=3, fcl_out=496, S=(7,7), B=2, num_classes=20):
+    def __init__(self, model_cfg, in_channels=3, fcl_out=496, S=(6,20), B=2, num_classes=20):
         super(YOLOv1, self).__init__()
         layer_list = []
         for block in model_cfg['architecture']:
