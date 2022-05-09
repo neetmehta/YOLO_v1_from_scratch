@@ -29,7 +29,6 @@ class YoloLoss(nn.Module):
         ## coord loss
         pred_coord = pred_best_box[..., 0:2]
         target_coord = target_box[..., 0:2]
-        print(pred_coord.unique())
         coord_loss = self.mse_loss(torch.flatten(pred_best_box, 0, -2), torch.flatten(target_box, 0, -2))
         
 
@@ -38,6 +37,10 @@ class YoloLoss(nn.Module):
         pred_h_w = torch.sign(pred_best_box[...,2:4])*torch.sqrt(torch.abs(pred_best_box[..., 2:4] + 1e-6)) # [N, S[0], S[1], 2]
         target_h_w = torch.sqrt(target_box[..., 2:4]) #[N, S[0], S[1], 2]
         box_loss = self.mse_loss(torch.flatten(pred_h_w, 0, -2), torch.flatten(target_h_w, 0, -2))
+
+        # pred_best_box[...,2:4] = torch.sign(pred_best_box[...,2:4])*torch.sqrt(torch.abs(pred_best_box[..., 2:4] + 1e-6)) # [N, S[0], S[1], 2]
+        # target_box[...,2:4] = torch.sqrt(target_box[..., 2:4]) #[N, S[0], S[1], 2]
+        # box_loss = self.mse_loss(torch.flatten(pred_best_box, 0, -2), torch.flatten(target_box, 0, -2))
         
         ## object loss
         pred_obj = exist_box_identity*(best_box*pred[...,14:15] + (1-best_box)*pred[..., 9:10])
@@ -54,11 +57,11 @@ class YoloLoss(nn.Module):
 
         class_loss = self.mse_loss(torch.flatten(pred_class, 0, -2), torch.flatten(target_class, 0, -2))
 
-        print('cord loss', coord_loss)
-        print('box loss', box_loss)
-        print('obj loss', object_loss)
-        print('noobj loss', noobject_loss)
-        print('class loss', class_loss)
+        # print('cord loss', coord_loss)
+        # print('box loss', box_loss)
+        # print('obj loss', object_loss)
+        # print('noobj loss', noobject_loss)
+        # print('class loss', class_loss)
         
         return self.coord*box_loss + self.coord*coord_loss + object_loss + self.noobj*noobject_loss + class_loss
         
