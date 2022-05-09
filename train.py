@@ -88,7 +88,7 @@ for epoch in range(EPOCHS):
     print(f"Mean validation loss was {sum(mean_loss)/len(mean_loss)}")
     if prev_val_loss > sum(mean_loss)/len(mean_loss):
         state_dict = {'model_state_dict': model.state_dict(), 'optimizer_state_dict': optimizer.state_dict(), 'epoch': epoch, 'loss':sum(mean_loss)/len(mean_loss)}
-        torch.save(osp(CKPT_DIR, f"yolo_v1_ckpt_{epoch}.pth"))
+        torch.save(state_dict, osp(CKPT_DIR, f"yolo_v1_ckpt_{epoch}.pth"))
         prev_val_loss = sum(mean_loss)/len(mean_loss)
 
 
