@@ -61,12 +61,13 @@ for epoch in range(EPOCHS):
     print("starting validation ...")
     loop = tqdm(val_dataloader)
     mean_loss = []
+    model.eval()
     for image, target in loop:
-        
-        image, target = image.to(device), target.to(device)
-        pred = model(image)
-        loss = criterion(pred, target)
-        mean_loss.append(loss.item())
+        with torch.no_grad():
+          image, target = image.to(device), target.to(device)
+          pred = model(image)
+          loss = criterion(pred, target)
+          mean_loss.append(loss.item())
 
     print(f"Mean validation loss was {sum(mean_loss)/len(mean_loss)}")
 
