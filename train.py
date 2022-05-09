@@ -1,8 +1,11 @@
+from cmath import inf
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
 from torchvision.transforms import transforms
 from tqdm import tqdm
+from os.path import join as osp
+import os
 
 from loss import YoloLoss
 from model import YOLOv1
@@ -11,12 +14,16 @@ from utils import *
 
 TRAIN_ROOT = r"E:\Deep Learning Projects\datasets\kitti_object_detection\Kitti\raw\training"
 TEST_ROOT = r"E:\Deep Learning Projects\datasets\kitti_object_detection\Kitti\raw\testing"
+CKPT_DIR = r"ckpt_dir"
+os.makedirs(CKPT_DIR, exist_ok=True)
 EPOCHS = 200
 LEARNING_RATE = 1e-5
 BATCH_SIZE = 2
 NUM_WORKERS = 0
 PIN_MEMORY = False
 TRAIN_VAL_SPLIT = 0.01
+RESUME = False
+CKPT_PATH = ""
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 S = (6,20)
@@ -37,8 +44,17 @@ model_cfg = read_yaml('model.yaml')
 model = YOLOv1(model_cfg).to(device)
 criterion = YoloLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
+if RESUME:
+    state_dict = torch.load(CKPT_PATH)
+    model.load_state_dict(state_dict['model_state_dict'])
+    optimizer.load_state_dict(state_dict['optimizer_state_dict'])
+    epoch = state_dict['epoch']
+    prev_val_loss = state_dict['loss']
+    print(f"Resuming from epoch: {epoch} and loss: {prev_val_loss}")
 
+
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
+prev_val_loss = inf
 for epoch in range(EPOCHS):
     loop = tqdm(train_dataloader)
     mean_loss = []
@@ -70,5 +86,9 @@ for epoch in range(EPOCHS):
           mean_loss.append(loss.item())
 
     print(f"Mean validation loss was {sum(mean_loss)/len(mean_loss)}")
+    if prev_val_loss > sum(mean_loss)/len(mean_loss):
+        state_dict = {'model_state_dict': model.state_dict(), 'optimizer_state_dict': optimizer.state_dict(), 'epoch': epoch, 'loss':sum(mean_loss)/len(mean_loss)}
+        torch.save(osp(CKPT_DIR, f"yolo_v1_ckpt_{epoch}.pth"))
+        prev_val_loss = sum(mean_loss)/len(mean_loss)
 
 
