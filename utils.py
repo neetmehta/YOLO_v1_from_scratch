@@ -116,7 +116,7 @@ def non_max_suppression(pred, S=(6,20), C=9, prob_threshold=0.4, iou_threshold=0
     """
     all_images_bb_after_nms = []
     for i in range(pred.shape[0]):
-        pred = cellbox_to_imgbox(pred, S, C)
+        pred = cellbox_to_imgbox(pred[i:i+1,...], S, C)
         bb_after_nms = []
         bbox_list = list(pred.reshape(-1,C+5))
         bboxes = [bb for bb in bbox_list if bb[-5]>prob_threshold]
