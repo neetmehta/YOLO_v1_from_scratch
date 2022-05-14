@@ -29,7 +29,6 @@ RESIZE = tuple(training_config['resize'])
 S = tuple(training_config['S'])
 B = 2
 C = training_config['C']
-print(S)
 assert isinstance(S, tuple)
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -81,7 +80,7 @@ for epoch in range(EPOCHS):
     print(f"Mean loss was {sum(mean_loss)/len(mean_loss)}")
 
     print("starting validation ...")
-    mean_ap = eval(train_dataloader, model)
+    mean_ap = eval(val_dataloader, model)
 
     if mean_ap['map'] > mean_ap_previous:
         state_dict = {'epoch': epoch,
