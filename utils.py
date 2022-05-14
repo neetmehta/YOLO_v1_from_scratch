@@ -178,7 +178,7 @@ def eval(dataloader, model, S=(6,20), C=9):
             target_dict = mAP_tensor(target[i], C, target=True)
             pred_list.append(pred_dict)
             target_list.append(target_dict)
-
+    model.train()
     if len(pred_list)>0:
         mean_avg_precision.update(pred_list, target_list)
         mean_ap = mean_avg_precision.compute()
