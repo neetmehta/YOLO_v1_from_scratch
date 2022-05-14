@@ -22,7 +22,7 @@ from utils import (read_yaml,
     save_checkpoint,
     load_checkpoint,
 )
-from loss2 import YoloLoss
+from loss import YoloLoss
 
 seed = 123
 torch.manual_seed(seed)
@@ -75,9 +75,9 @@ def train_fn(train_loader, model, optimizer, loss_fn):
 
 
 def main():
-    # model_cfg = read_yaml('model.yaml')
-    # model = YOLOv1(model_cfg).to(DEVICE)
-    model = Yolov1(split_size=7, num_boxes=2, num_classes=20).to(DEVICE)
+    model_cfg = read_yaml('model.yaml')
+    model = YOLOv1(model_cfg).to(DEVICE)
+    # model = Yolov1(split_size=7, num_boxes=2, num_classes=20).to(DEVICE)
     print(sum(i.numel() for i in model.parameters()))
     optimizer = optim.Adam(
         model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY
