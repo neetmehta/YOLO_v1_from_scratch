@@ -12,23 +12,28 @@ from model import YOLOv1
 from data import KittiDetection2D
 from utils import *
 
-TRAIN_ROOT = r"E:\Deep Learning Projects\datasets\kitti_2d_object_detection\Kitti\raw\training"
-TEST_ROOT = r"E:\Deep Learning Projects\datasets\kitti_2d_object_detection\Kitti\raw\testing"
-CKPT_DIR = r"ckpt_dir"
-os.makedirs(CKPT_DIR, exist_ok=True)
-EPOCHS = 200
-LEARNING_RATE = 1e-6
-BATCH_SIZE = 8
-NUM_WORKERS = 0
-PIN_MEMORY = False
-TRAIN_VAL_SPLIT = 0.00201
-RESUME = False
-CKPT_PATH = ""
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+training_config = read_yaml('kitti.yaml')
 
-S = (6,20)
+TRAIN_ROOT = training_config['train_images_path']
+TEST_ROOT = training_config['test_image_path']
+CKPT_DIR = training_config['ckpt_dir']
+EPOCHS = training_config['epochs']
+LEARNING_RATE = training_config['learning_rate']
+BATCH_SIZE = training_config['batch_size']
+NUM_WORKERS = training_config['num_workers']
+PIN_MEMORY = training_config['pin_memory']
+TRAIN_VAL_SPLIT = training_config['train_val_split']
+RESUME = training_config['resume']
+CKPT_PATH = training_config['ckpt_path']
+RESIZE = tuple(training_config['resize'])
+S = tuple(training_config['S'])
 B = 2
-C = 9
+C = training_config['C']
+print(S)
+assert isinstance(S, tuple)
+
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+os.makedirs(CKPT_DIR, exist_ok=True)
 
 img_transforms = transforms.Compose([transforms.Resize((384,1248)), transforms.ToTensor()])
 
@@ -54,7 +59,8 @@ if RESUME:
 
 
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
-prev_val_loss = inf
+mean_ap_previous = 0
+
 for epoch in range(EPOCHS):
     loop = tqdm(train_dataloader)
     mean_loss = []
@@ -75,22 +81,14 @@ for epoch in range(EPOCHS):
     print(f"Mean loss was {sum(mean_loss)/len(mean_loss)}")
 
     print("starting validation ...")
-    # loop = tqdm(val_dataloader)
-    # mean_loss = []
-    # model.eval()
-    # for image, target in loop:
-    #     with torch.no_grad():
-    #       image, target = image.to(device), target.to(device)
-    #       pred = model(image)
-    #       loss = criterion(pred, target)
-    #       mean_loss.append(loss.item())
+    mean_ap = eval(train_dataloader, model)
 
-    # print(f"Mean validation loss was {sum(mean_loss)/len(mean_loss)}")
-    # if prev_val_loss > sum(mean_loss)/len(mean_loss):
-    #     state_dict = {'model_state_dict': model.state_dict(), 'optimizer_state_dict': optimizer.state_dict(), 'epoch': epoch, 'loss':sum(mean_loss)/len(mean_loss)}
-    #     torch.save(state_dict, osp(CKPT_DIR, f"yolo_v1_ckpt_{epoch}.pth"))
-    #     prev_val_loss = sum(mean_loss)/len(mean_loss)
-
-    eval(train_dataloader, model)
+    if mean_ap['map'] > mean_ap_previous:
+        state_dict = {'epoch': epoch,
+                      'loss': sum(mean_loss)/len(mean_loss), 
+                      'model_state_dict': model.state_dict(), 
+                      'optimizer_state_dict': optimizer.state_dict()}
+        mean_ap_previous = mean_ap['map']
+        save_checkpoint(state_dict, CKPT_DIR)
 
 
