@@ -40,7 +40,7 @@ print(f"batch size: {BATCH_SIZE}")
 print(f"Learning rate: {LEARNING_RATE}")
 print(f"Num workers: {NUM_WORKERS}")
 print(f"train val split: {TRAIN_VAL_SPLIT}")
-print(f" fcl out: {training_config['fcl_out']}")
+print(f"fcl out: {training_config['fcl_out']}")
 print(f"dropout: {training_config['dropout']}")
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
