@@ -10,11 +10,9 @@ def iou(pred, tar):
     input:
         pred (Tensor): [N, S[0], S[1], 4] -> [N,11,24,4]
         tar (Tensor): [N, S[0], S[1], 4] -> [N,11,24,4]
-
     return:
         iou (Tensor): [N, S[0], S[1]]
     """
-    
     pred_box = torch.cat((pred[:,:,:,0:1]-pred[:,:,:,2:3]/2, 
                           pred[:,:,:,1:2]-pred[:,:,:,3:4]/2, 
                           pred[:,:,:,0:1]+pred[:,:,:,2:3]/2, 
