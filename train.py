@@ -59,17 +59,19 @@ model = YOLOv1(model_cfg).to(device)
 criterion = YoloLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 epoch = 0
+prev_mean_ap = 0
 if RESUME:
     state_dict = torch.load(CKPT_PATH)
     model.load_state_dict(state_dict['model_state_dict'])
     optimizer.load_state_dict(state_dict['optimizer_state_dict'])
-    epoch = state_dict['epoch']
+    epoch = state_dict['epoch']+1
     prev_val_loss = state_dict['loss']
-    print(f"Resuming from epoch: {epoch} and loss: {prev_val_loss}")
+    prev_mean_ap = state_dict['map']
+    print(f"Resuming from epoch: {epoch} and loss: {prev_val_loss} and mean_ap: {prev_mean_ap}")
 
 
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
-mean_ap_previous = 0
+
 
 for epoch in range(epoch, EPOCHS):
     loop = tqdm(train_dataloader)
@@ -97,7 +99,8 @@ for epoch in range(epoch, EPOCHS):
         state_dict = {'epoch': epoch,
                       'loss': sum(mean_loss)/len(mean_loss), 
                       'model_state_dict': model.state_dict(), 
-                      'optimizer_state_dict': optimizer.state_dict()}
+                      'optimizer_state_dict': optimizer.state_dict(),
+                      'map': mean_ap['map']}
         mean_ap_previous = mean_ap['map']
         save_checkpoint(state_dict, CKPT_DIR)
 
