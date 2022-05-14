@@ -35,6 +35,12 @@ B = 2
 C = training_config['C']
 assert isinstance(S, tuple)
 
+print(f'No. of epochs {EPOCHS}')
+print(f"batch size: {BATCH_SIZE}")
+print(f'Learning rate: {LEARNING_RATE}')
+print(f'Num workers: {NUM_WORKERS}')
+print(f"train val split: {TRAIN_VAL_SPLIT}")
+
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 os.makedirs(CKPT_DIR, exist_ok=True)
 
