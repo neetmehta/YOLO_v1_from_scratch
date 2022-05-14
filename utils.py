@@ -4,6 +4,11 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from collections import Counter
 import yaml
+from torchmetrics.detection.mean_ap import MeanAveragePrecision
+from torchvision.ops import nms
+from tqdm import tqdm
+
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 def iou(pred, tar):
     """
@@ -104,7 +109,34 @@ def iou_check(pred, target, thres):
     pred = pred.reshape(1,1,1,-1)
     target = target.reshape(1,1,1,-1)
     return iou(pred, target)<thres
-def non_max_suppression(pred_batch, S=(6,20), C=9, prob_threshold=0.4, iou_threshold=0.5):
+# def non_max_suppression(pred_batch, S=(6,20), C=9, prob_threshold=0.4, iou_threshold=0.5, target=False):
+#     """
+#     input:
+#         pred (tensor): [N, S[0], S[1], C+10]
+#         prob_thres (float): porbability threshold
+#         iou_thres (float): iou threshold
+
+#     return:
+#         list(Nxlist(tensors[14])
+#     """
+#     all_images_bb_after_nms = []
+#     for i in range(pred_batch.shape[0]):
+#         pred = cellbox_to_imgbox(pred_batch[i:i+1,...], S, C, target=target)
+#         bb_after_nms = []
+#         bbox_list = list(pred.reshape(-1,C+5))
+#         bboxes = [bb for bb in bbox_list if bb[-5]>prob_threshold]
+#         bboxes = sorted(bboxes, key=lambda x:x[-5], reverse=True)
+#         while bboxes:
+#             chosen_box = bboxes.pop(0)
+
+#             bboxes = [bb for bb in bboxes if torch.argmax(bb[:C])!=torch.argmax(chosen_box[:C]) or iou_check(bb[-4:], chosen_box[-4:], iou_threshold)]
+#             bb_after_nms.append(chosen_box)
+        
+#         all_images_bb_after_nms.append(bb_after_nms)
+
+#     return all_images_bb_after_nms
+
+def non_max_suppression(pred_batch, S=(6,20), C=9, prob_threshold=0.4, iou_threshold=0.5, target=False):
     """
     input:
         pred (tensor): [N, S[0], S[1], C+10]
@@ -112,21 +144,84 @@ def non_max_suppression(pred_batch, S=(6,20), C=9, prob_threshold=0.4, iou_thres
         iou_thres (float): iou threshold
 
     return:
-        list(Nxlist(tensors[14])
+        list(tensors[N x 14])
     """
-    all_images_bb_after_nms = []
-    for i in range(pred_batch.shape[0]):
-        pred = cellbox_to_imgbox(pred_batch[i:i+1,...], S, C)
-        bb_after_nms = []
-        bbox_list = list(pred.reshape(-1,C+5))
-        bboxes = [bb for bb in bbox_list if bb[-5]>prob_threshold]
-        bboxes = sorted(bboxes, key=lambda x:x[-5], reverse=True)
-        while bboxes:
-            chosen_box = bboxes.pop(0)
+    N = pred_batch.shape[0]
+    batch_after_nms = []
+    for i in range(N):
+        pred = pred_batch[i].unsqueeze(0)
+        pred = cellbox_to_corners(pred,S,C, target=target)
+        pred = pred[torch.where(pred[...,9]>prob_threshold)]
+        pred_boxes = pred[:,-4:]
+        pred_scores = pred[:,9]
+        pred_boxes_after_nms = nms(pred_boxes, pred_scores, iou_threshold)
+        batch_after_nms.append(pred[pred_boxes_after_nms])
 
-            bboxes = [bb for bb in bboxes if torch.argmax(bb[:C])!=torch.argmax(chosen_box[:C]) or iou_check(bb[-4:], chosen_box[-4:], iou_threshold)]
-            bb_after_nms.append(chosen_box)
-        
-        all_images_bb_after_nms.append(bb_after_nms)
+    return batch_after_nms
 
-    return all_images_bb_after_nms
+
+def mAP_tensor(tensor, C=9, target=False):
+    boxes = []
+    labels = []
+    scores = []
+    for i in tensor:
+        boxes.append(i[-4:])
+        labels.append(torch.argmax(i[:C]))
+        scores.append(i[C])
+
+    boxes = torch.stack(boxes)
+    labels = torch.tensor(labels)
+    scores = torch.tensor(scores)
+    if target:
+        return dict(boxes=boxes, labels=labels)
+    return dict(boxes=boxes, scores=scores, labels=labels)
+
+
+
+# for tensor in tensorlist:
+#     if tensor.shape[0]==0:
+#         continue
+#     pred = mAP_tensor(tensor, C)
+#     target = mAP_tensor(targetlist, C, target=True)
+#     mean_avg_precision.update(pred, target)
+
+def eval(dataloader, model, S=(6,20), C=9):
+
+    model.eval()
+    loop = tqdm(dataloader)
+    batch_size = dataloader.batch_size
+    mean_avg_precision = MeanAveragePrecision()
+    pred_list = []
+    target_list = []
+
+
+    for image, target in loop:
+
+        image = image.to(device)
+        pred = model(image)
+        pred = pred.detach().cpu()
+        pred = non_max_suppression(pred, S, C)
+        target = non_max_suppression(target, S, C, target=True)
+
+        for i in range(batch_size):
+            if pred[i].shape[0]==0:
+                continue
+
+            pred_dict = mAP_tensor(pred[i], C)
+            target_dict = mAP_tensor(target[i], C, target=True)
+            pred_list.append(pred_dict)
+            target_list.append(target_dict)
+
+    if len(pred_list)>0:
+        mean_avg_precision.update(pred_list, target_list)
+        mean_ap = mean_avg_precision.compute()
+        print(mean_ap['map'].item())
+
+    else:
+        print(0)
+
+
+    model.train()
+
+
+
