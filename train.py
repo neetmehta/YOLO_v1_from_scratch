@@ -48,6 +48,7 @@ model_cfg = read_yaml('model.yaml')
 model = YOLOv1(model_cfg).to(device)
 criterion = YoloLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
+epoch = 0
 if RESUME:
     state_dict = torch.load(CKPT_PATH)
     model.load_state_dict(state_dict['model_state_dict'])
@@ -60,7 +61,7 @@ if RESUME:
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
 mean_ap_previous = 0
 
-for epoch in range(EPOCHS):
+for epoch in range(epoch, EPOCHS):
     loop = tqdm(train_dataloader)
     mean_loss = []
     for image, target in loop:
@@ -82,7 +83,7 @@ for epoch in range(EPOCHS):
     print("starting validation ...")
     mean_ap = eval(val_dataloader, model)
 
-    if mean_ap['map'] > mean_ap_previous:
+    if mean_ap['map'] > mean_ap_previous or epoch%20==0:
         state_dict = {'epoch': epoch,
                       'loss': sum(mean_loss)/len(mean_loss), 
                       'model_state_dict': model.state_dict(), 
