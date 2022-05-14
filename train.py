@@ -11,6 +11,10 @@ from loss import YoloLoss
 from model import YOLOv1
 from data import KittiDetection2D
 from utils import *
+import random
+
+random.seed(10)
+torch.manual_seed(10)
 
 training_config = read_yaml('kitti.yaml')
 
