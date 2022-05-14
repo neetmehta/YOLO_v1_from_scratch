@@ -36,4 +36,4 @@ class YOLOv1(nn.Module):
         return nn.Sequential(nn.Conv2d(in_channels, out_channels, kernal, stride, padding, bias=False), nn.BatchNorm2d(out_channels), nn.LeakyReLU(0.1))
 
     def _create_fcl(self, S: tuple, B: int, C: int, fcl_out: int=4096):
-        return nn.Sequential(nn.Flatten(), nn.Linear(1024*S[0]*S[1], fcl_out), nn.Dropout(0.5), nn.LeakyReLU(0.1), nn.Linear(fcl_out, S[0]*S[1]*(self.C + self.B*5)))
+        return nn.Sequential(nn.Flatten(), nn.Linear(1024*S[0]*S[1], fcl_out), nn.Dropout(0.1), nn.LeakyReLU(0.1), nn.Linear(fcl_out, S[0]*S[1]*(self.C + self.B*5)))
