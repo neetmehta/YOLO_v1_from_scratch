@@ -44,7 +44,6 @@ class KittiDetection2D(Dataset):
             target (Tensor): target tensor of size [S[0], S[1], C+B*5]
         """
         image = Image.open(osp(self.image_dir, self.image_list[index]))
-        self.w, self.h = image.size
         label_pth = osp(self.label_dir, self.label_list[index])
         target = torch.zeros(self.S[0], self.S[1], self.C+5)
         with open(label_pth, 'r') as f:
