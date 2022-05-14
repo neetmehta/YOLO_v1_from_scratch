@@ -1,8 +1,8 @@
 train_images_path : "E:\\Deep Learning Projects\\datasets\\kitti_2d_object_detection\\Kitti\\raw\\training"
 test_image_path : "E:\\Deep Learning Projects\\datasets\\kitti_2d_object_detection\\Kitti\\raw\\testing"
 ckpt_dir : "ckpt_dir"
-epochs : 200
-learning_rate : 0.00001
+epochs : 500
+learning_rate : 0.0001
 batch_size : 8
 num_workers : 0
 pin_memory : False
