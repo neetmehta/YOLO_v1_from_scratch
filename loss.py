@@ -3,7 +3,7 @@ from torch import nn
 from utils import iou
 
 class YoloLoss(nn.Module):
-    def __init__(self, S=(6,20), B=2, C=9, coord=5, noobj=0.5) -> None:
+    def __init__(self, S=(6, 20), B=2, C=9, coord=5, noobj=0.5) -> None:
         super(YoloLoss, self).__init__()
         self.mse_loss = nn.MSELoss(reduction="sum")
         self.S = S
@@ -13,23 +13,23 @@ class YoloLoss(nn.Module):
         self.noobj = noobj
 
     def forward(self, pred, target):
-
-        class_probs = target[..., :self.C]                              # [N, S[0], s[1], C]
-        exist_box_identity = target[..., self.C:self.C+1]
+        C = self.C
+        class_probs = target[..., :C]                              # [N, S[0], s[1], C]
+        exist_box_identity = target[..., C:C+1]
         not_exist_box_identity = 1-exist_box_identity               # [N, S[0], s[1], 1]
-        target_box = exist_box_identity * target[..., self.C+1:]                       # [N, S[0], s[1], 4]
+        target_box = exist_box_identity * target[..., C+1:]                       # [N, S[0], s[1], 4]
         
-        iou_b1 = iou(pred[..., 10:14], target[...,10:14]).unsqueeze(-1) # [N, S[0], S[1], 1]
-        iou_b2 = iou(pred[...,15:19], target[..., 10:14]).unsqueeze(-1) # [N, S[0], S[1], 1]
+        iou_b1 = iou(pred[..., C+1:C+5], target[...,C+1:C+5]).unsqueeze(-1) # [N, S[0], S[1], 1]
+        iou_b2 = iou(pred[...,C+6:C+10], target[..., C+1:C+5]).unsqueeze(-1) # [N, S[0], S[1], 1]
         max_iou, best_box = torch.max(torch.cat((iou_b1,iou_b2), dim=-1), dim=-1)            # best_box [N, S[0], S[1]]
         best_box = best_box.unsqueeze(-1)
         
-        pred_best_box = exist_box_identity*(best_box*pred[...,15:19] + (1-best_box)*pred[..., 10:14]) # [N, S[0], s[1], 4]
+        pred_best_box = exist_box_identity*(best_box*pred[...,C+6:C+10] + (1-best_box)*pred[..., C+1:C+5]) # [N, S[0], s[1], 4]
         
         ## coord loss
         pred_coord = pred_best_box[..., 0:2]
         target_coord = target_box[..., 0:2]
-        coord_loss = self.mse_loss(torch.flatten(pred_best_box, 0, -2), torch.flatten(target_box, 0, -2))
+        coord_loss = self.mse_loss(torch.flatten(pred_coord, 0, -2), torch.flatten(target_coord, 0, -2))
         
 
         ## box loss
@@ -43,17 +43,17 @@ class YoloLoss(nn.Module):
         # box_loss = self.mse_loss(torch.flatten(pred_best_box, 0, -2), torch.flatten(target_box, 0, -2))
         
         ## object loss
-        pred_obj = exist_box_identity*(best_box*pred[...,14:15] + (1-best_box)*pred[..., 9:10])
+        pred_obj = exist_box_identity*(best_box*pred[...,C+5:C+6] + (1-best_box)*pred[..., C:C+1])
 
         object_loss = self.mse_loss(torch.flatten(pred_obj, 0, -2), torch.flatten(exist_box_identity, 0, -2))
         
         ## no object loss
 
-        noobject_loss = self.mse_loss(torch.flatten((1-exist_box_identity)*pred[...,9:10], start_dim=1), torch.flatten((1-exist_box_identity)*target[...,9:10], start_dim=1)) + self.mse_loss(torch.flatten((1-exist_box_identity)*pred[...,14:15], start_dim=1), torch.flatten((1-exist_box_identity)*target[...,9:10], start_dim=1))
+        noobject_loss = self.mse_loss(torch.flatten((1-exist_box_identity)*pred[...,C:C+1], start_dim=1), torch.flatten((1-exist_box_identity)*target[...,C:C+1], start_dim=1)) + self.mse_loss(torch.flatten((1-exist_box_identity)*pred[...,C+5:C+6], start_dim=1), torch.flatten((1-exist_box_identity)*target[...,C:C+1], start_dim=1))
         
         ## class loss
-        pred_class = exist_box_identity*pred[..., :9]
-        target_class = exist_box_identity*target[..., :9]
+        pred_class = exist_box_identity*pred[..., :C]
+        target_class = exist_box_identity*target[..., :C]
 
         class_loss = self.mse_loss(torch.flatten(pred_class, 0, -2), torch.flatten(target_class, 0, -2))
 
