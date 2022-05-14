@@ -35,11 +35,13 @@ B = 2
 C = training_config['C']
 assert isinstance(S, tuple)
 
-print(f'No. of epochs {EPOCHS}')
+print(f"No. of epochs {EPOCHS}")
 print(f"batch size: {BATCH_SIZE}")
-print(f'Learning rate: {LEARNING_RATE}')
-print(f'Num workers: {NUM_WORKERS}')
+print(f"Learning rate: {LEARNING_RATE}")
+print(f"Num workers: {NUM_WORKERS}")
 print(f"train val split: {TRAIN_VAL_SPLIT}")
+print(f" fcl out: {training_config['fcl_out']}")
+print(f"dropout: {training_config['dropout']}")
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 os.makedirs(CKPT_DIR, exist_ok=True)
@@ -55,7 +57,7 @@ train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True
 val_dataloader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=PIN_MEMORY, num_workers=NUM_WORKERS, drop_last=True)
 
 model_cfg = read_yaml('model.yaml')
-model = YOLOv1(model_cfg).to(device)
+model = YOLOv1(model_cfg, fcl_out=training_config['fcl_out'], dropout=training_config['dropout']).to(device)
 criterion = YoloLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 epoch = 0
