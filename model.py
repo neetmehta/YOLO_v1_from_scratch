@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 import yaml
-from encoder import Darknet, ResNet101
+from encoder import Darknet, ResNet
 from utils import read_yaml
 
 class YOLOv1(nn.Module):
@@ -33,8 +33,24 @@ def get_model(backbone: str):
         backbone_model = Darknet(darknet_cfg)
         model = YOLOv1(backbone=backbone_model, S=(6, 20), backbone_out_channels=1024)
 
-    if backbone == 'resnet101':
-        backbone_model = ResNet101()
+    if backbone == 'resnet152':
+        backbone_model = ResNet(backbone)
         model = YOLOv1(backbone=backbone_model, S=(12, 39), backbone_out_channels=2048)
+
+    if backbone == 'resnet101':
+        backbone_model = ResNet(backbone)
+        model = YOLOv1(backbone=backbone_model, S=(12, 39), backbone_out_channels=2048)
+
+    if backbone == 'resnet50':
+        backbone_model = ResNet(backbone)
+        model = YOLOv1(backbone=backbone_model, S=(12, 39), backbone_out_channels=2048)
+
+    if backbone == 'resnet34':
+        backbone_model = ResNet(backbone)
+        model = YOLOv1(backbone=backbone_model, S=(12, 39), backbone_out_channels=512)
+
+    if backbone == 'resnet18':
+        backbone_model = ResNet(backbone)
+        model = YOLOv1(backbone=backbone_model, S=(12, 39), backbone_out_channels=512)
     
     return model
