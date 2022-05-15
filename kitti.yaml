@@ -11,7 +11,8 @@ resume : False
 dropout: 0.06
 fcl_out: 496
 ckpt_path : ""
+backbone: resnet101
 
 resize : [384,1248]
-S: [6,20]
+S: [12,39]
 C: 9

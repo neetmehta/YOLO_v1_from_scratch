@@ -8,7 +8,7 @@ from os.path import join as osp
 import os
 
 from loss import YoloLoss
-from model import YOLOv1
+from model import get_model
 from data import KittiDetection2D
 from utils import *
 import random
@@ -48,7 +48,7 @@ os.makedirs(CKPT_DIR, exist_ok=True)
 
 img_transforms = transforms.Compose([transforms.Resize((384,1248)), transforms.ToTensor()])
 
-dataset = KittiDetection2D(TRAIN_ROOT, transforms=img_transforms)
+dataset = KittiDetection2D(TRAIN_ROOT, transforms=img_transforms, S=S, C=C)
 train_dataset_len = int(TRAIN_VAL_SPLIT*len(dataset))
 val_dataset_len = len(dataset) - train_dataset_len
 train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_dataset_len, val_dataset_len])
@@ -56,9 +56,11 @@ train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_datas
 train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=PIN_MEMORY, num_workers=NUM_WORKERS, drop_last=True)
 val_dataloader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=PIN_MEMORY, num_workers=NUM_WORKERS, drop_last=True)
 
-model_cfg = read_yaml('model.yaml')
-model = YOLOv1(model_cfg, fcl_out=training_config['fcl_out'], dropout=training_config['dropout']).to(device)
-criterion = YoloLoss()
+model = get_model(training_config['backbone'])
+model = model.to(device)
+model_parameters = sum(i.numel() for i in model.parameters())
+print(f'Model parameters: {model_parameters}')
+criterion = YoloLoss(S=S, C=C)
 optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 epoch = 0
 prev_mean_ap = 0
