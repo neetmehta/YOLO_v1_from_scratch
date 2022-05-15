@@ -151,7 +151,7 @@ def mAP_tensor(tensor, C=9, target=False):
     return dict(boxes=boxes, scores=scores, labels=labels)
 
 def save_checkpoint(state_dict, path):
-    torch.save(state_dict, osp(path,f"yolo_checkpoint_{state_dict['epoch']}.ckpt"))
+    torch.save(state_dict, path)
 
 def eval(dataloader, model, S=(6,20), C=9):
 

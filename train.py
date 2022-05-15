@@ -106,6 +106,7 @@ for epoch in range(epoch, EPOCHS):
                       'optimizer_state_dict': optimizer.state_dict(),
                       'map': mean_ap['map']}
         prev_mean_ap = mean_ap['map']
-        save_checkpoint(state_dict, CKPT_DIR)
+        path = osp(CKPT_DIR,f"yolo_{training_config['backbone']}_checkpoint_{state_dict['epoch']}.ckpt")
+        save_checkpoint(state_dict, path)
 
 
