@@ -80,6 +80,7 @@ scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
 for epoch in range(epoch, EPOCHS):
     loop = tqdm(train_dataloader)
     mean_loss = []
+    model.train()
     for image, target in loop:
         
         image, target = image.to(device), target.to(device)
