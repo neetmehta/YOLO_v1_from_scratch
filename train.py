@@ -30,7 +30,8 @@ if DATASET=='voc':
 
     IMAGE_ROOT = training_config['images_path']
     LABEL_ROOT = training_config['label_path']
-    CSV_PATH = training_config['csv_path']
+    TRAIN_CSV_PATH = training_config['train_csv_path']
+    VAL_CSV_PATH = training_config['val_csv_path']
 
 CKPT_DIR = training_config['ckpt_dir']
 EPOCHS = training_config['epochs']
@@ -64,15 +65,16 @@ img_transforms = transforms.Compose([transforms.Resize(RESIZE), transforms.ToTen
 ## Kitti
 if DATASET=='kitti':
     dataset = KittiDetection2D(TRAIN_ROOT, transforms=img_transforms, S=S, C=C)
-
+    train_dataset_len = int(TRAIN_VAL_SPLIT*len(dataset))
+    val_dataset_len = len(dataset) - train_dataset_len
+    train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_dataset_len, val_dataset_len])
 
 ## VOC
 if DATASET=='voc':
-    dataset = VOCDataset(CSV_PATH, IMAGE_ROOT, LABEL_ROOT, transform=img_transforms)
+    train_dataset = VOCDataset(TRAIN_CSV_PATH, IMAGE_ROOT, LABEL_ROOT, transform=img_transforms)
+    val_dataset = VOCDataset(VAL_CSV_PATH, IMAGE_ROOT, LABEL_ROOT, transform=img_transforms)
 
-train_dataset_len = int(TRAIN_VAL_SPLIT*len(dataset))
-val_dataset_len = len(dataset) - train_dataset_len
-train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_dataset_len, val_dataset_len])
+
 train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=PIN_MEMORY, num_workers=NUM_WORKERS, drop_last=True)
 val_dataloader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=PIN_MEMORY, num_workers=NUM_WORKERS, drop_last=True)
 
