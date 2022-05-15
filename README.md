@@ -16,3 +16,9 @@ root
         └─────training  
                  ├─────image_2  
                  └─────label_2  
+                 
+## To train
+Edit kitti.yaml
+
+Run:
+`python3 train.py`
