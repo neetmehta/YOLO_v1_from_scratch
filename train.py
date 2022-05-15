@@ -6,12 +6,12 @@ Main file for training Yolo model on Pascal VOC dataset
 import torch
 import torchvision.transforms as transforms
 import torch.optim as optim
-import torchvision.transforms.functional as FT
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 from model import YOLOv1
 from model2 import Yolov1
 from data import VOCDataset
+from loss import YoloLoss
 from utils import (read_yaml,
     non_max_suppression,
     mean_average_precision,
@@ -22,7 +22,7 @@ from utils import (read_yaml,
     save_checkpoint,
     load_checkpoint,
 )
-from loss import YoloLoss
+
 
 seed = 123
 torch.manual_seed(seed)

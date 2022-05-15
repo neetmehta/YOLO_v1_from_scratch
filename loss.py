@@ -3,7 +3,7 @@ from torch import nn
 from utils import iou
 
 class YoloLoss(nn.Module):
-    def __init__(self, S=(7, 7), B=2, C=20, coord=5, noobj=0.5) -> None:
+    def __init__(self, S=(6, 20), B=2, C=9, coord=5, noobj=0.5) -> None:
         super(YoloLoss, self).__init__()
         self.mse_loss = nn.MSELoss(reduction="sum")
         self.S = S
@@ -29,7 +29,6 @@ class YoloLoss(nn.Module):
         ## coord loss
         pred_coord = pred_best_box[..., 0:2]
         target_coord = target_box[..., 0:2]
-        print(pred_coord.shape, target_coord.shape)
         coord_loss = self.mse_loss(torch.flatten(pred_coord, 0, -2), torch.flatten(target_coord, 0, -2))
         
 
@@ -38,10 +37,6 @@ class YoloLoss(nn.Module):
         pred_h_w = torch.sign(pred_best_box[...,2:4])*torch.sqrt(torch.abs(pred_best_box[..., 2:4] + 1e-6)) # [N, S[0], S[1], 2]
         target_h_w = torch.sqrt(target_box[..., 2:4]) #[N, S[0], S[1], 2]
         box_loss = self.mse_loss(torch.flatten(pred_h_w, 0, -2), torch.flatten(target_h_w, 0, -2))
-
-        # pred_best_box[...,2:4] = torch.sign(pred_best_box[...,2:4])*torch.sqrt(torch.abs(pred_best_box[..., 2:4] + 1e-6)) # [N, S[0], S[1], 2]
-        # target_box[...,2:4] = torch.sqrt(target_box[..., 2:4]) #[N, S[0], S[1], 2]
-        # box_loss = self.mse_loss(torch.flatten(pred_best_box, 0, -2), torch.flatten(target_box, 0, -2))
         
         ## object loss
         pred_obj = exist_box_identity*(best_box*pred[...,C+5:C+6] + (1-best_box)*pred[..., C:C+1])
