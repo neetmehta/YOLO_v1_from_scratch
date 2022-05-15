@@ -16,7 +16,7 @@ import random
 random.seed(10)
 torch.manual_seed(10)
 print('seed created')
-training_config = read_yaml('kitti.yaml')
+training_config = read_yaml(r'yaml/kitti.yaml')
 
 TRAIN_ROOT = training_config['train_images_path']
 TEST_ROOT = training_config['test_image_path']

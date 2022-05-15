@@ -29,8 +29,8 @@ class YOLOv1(nn.Module):
 
 def get_model(backbone: str):
     if backbone == 'darknet':
-        darknet_cfg = read_yaml('darknet.yaml')
-        backbone_model = Darknet(darknet_cfg['architecture'])
+        darknet_cfg = read_yaml('yaml/darknet.yaml')
+        backbone_model = Darknet(darknet_cfg)
         model = YOLOv1(backbone=backbone_model, S=(6, 20), backbone_out_channels=1024)
 
     if backbone == 'resnet101':
