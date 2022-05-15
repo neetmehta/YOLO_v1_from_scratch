@@ -98,7 +98,7 @@ for epoch in range(epoch, EPOCHS):
     print(f"Mean loss was {sum(mean_loss)/len(mean_loss)}")
 
     print("starting validation ...")
-    mean_ap = eval(val_dataloader, model)
+    mean_ap = eval(val_dataloader, model, S=S, C=C)
     print(f'Mean average precision: {mean_ap["map"]}')
     if mean_ap['map'] > prev_mean_ap or epoch%20==0:
         state_dict = {'epoch': epoch,
