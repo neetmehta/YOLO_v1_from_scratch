@@ -10,9 +10,9 @@ To use darknet, change backbone as 'darknet' and change dimensions of S to (6,20
 
 ## Data root
 
-|───root  
+└───root
     ├───testing  
-    │   |───image_2  
-    |───training  
+    │   └───image_2  
+    └───training  
         ├───image_2  
-        |───label_2  
+        └───label_2  
