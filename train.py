@@ -103,7 +103,7 @@ for epoch in range(epoch, EPOCHS):
                       'model_state_dict': model.state_dict(), 
                       'optimizer_state_dict': optimizer.state_dict(),
                       'map': mean_ap['map']}
-        mean_ap_previous = mean_ap['map']
+        prev_mean_ap = mean_ap['map']
         save_checkpoint(state_dict, CKPT_DIR)
 
 
