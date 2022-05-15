@@ -56,7 +56,7 @@ train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_datas
 train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=PIN_MEMORY, num_workers=NUM_WORKERS, drop_last=True)
 val_dataloader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=PIN_MEMORY, num_workers=NUM_WORKERS, drop_last=True)
 
-model = get_model(training_config['backbone'])
+model = get_model(training_config['backbone'], S, C)
 model = model.to(device)
 model_parameters = sum(i.numel() for i in model.parameters())
 print(f'Model parameters: {model_parameters}')
