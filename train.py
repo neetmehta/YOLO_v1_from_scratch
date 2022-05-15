@@ -13,8 +13,8 @@ from data import KittiDetection2D, VOCDataset
 from utils import *
 import random
 
-random.seed(10)
-torch.manual_seed(10)
+random.seed(123)
+torch.manual_seed(123)
 print('seed created')
 
 DATASET = 'voc'
@@ -68,7 +68,7 @@ if DATASET=='kitti':
 
 ## VOC
 if DATASET=='voc':
-    dataset = VOCDataset(CSV_PATH, IMAGE_ROOT, LABEL_ROOT)
+    dataset = VOCDataset(CSV_PATH, IMAGE_ROOT, LABEL_ROOT, transform=img_transforms)
 
 train_dataset_len = int(TRAIN_VAL_SPLIT*len(dataset))
 val_dataset_len = len(dataset) - train_dataset_len

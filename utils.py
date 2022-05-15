@@ -175,6 +175,8 @@ def eval(dataloader, model, S=(6,20), C=9):
                 continue
 
             pred_dict = mAP_tensor(pred[i], C)
+            if len(target[i])==0:
+                continue
             target_dict = mAP_tensor(target[i], C, target=True)
             pred_list.append(pred_dict)
             target_list.append(target_dict)
