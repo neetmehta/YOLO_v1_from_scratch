@@ -9,17 +9,29 @@ import os
 
 from loss import YoloLoss
 from model import get_model
-from data import KittiDetection2D
+from data import KittiDetection2D, VOCDataset
 from utils import *
 import random
 
 random.seed(10)
 torch.manual_seed(10)
 print('seed created')
-training_config = read_yaml(r'yaml/kitti.yaml')
 
-TRAIN_ROOT = training_config['train_images_path']
-TEST_ROOT = training_config['test_image_path']
+DATASET = 'voc'
+
+if DATASET=='kitti':
+    training_config = read_yaml(r'yaml/kitti.yaml')
+    TRAIN_ROOT = training_config['train_images_path']
+    TEST_ROOT = training_config['test_image_path']
+
+
+if DATASET=='voc':
+    training_config = read_yaml(r'yaml/voc.yaml')
+
+    IMAGE_ROOT = training_config['images_path']
+    LABEL_ROOT = training_config['label_path']
+    CSV_PATH = training_config['csv_path']
+
 CKPT_DIR = training_config['ckpt_dir']
 EPOCHS = training_config['epochs']
 LEARNING_RATE = training_config['learning_rate']
@@ -33,6 +45,7 @@ RESIZE = tuple(training_config['resize'])
 S = tuple(training_config['S'])
 B = 2
 C = training_config['C']
+
 assert isinstance(S, tuple)
 
 print(f"No. of epochs {EPOCHS}")
@@ -46,13 +59,20 @@ print(f"dropout: {training_config['dropout']}")
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 os.makedirs(CKPT_DIR, exist_ok=True)
 
-img_transforms = transforms.Compose([transforms.Resize((384,1248)), transforms.ToTensor()])
+img_transforms = transforms.Compose([transforms.Resize(RESIZE), transforms.ToTensor()])
 
-dataset = KittiDetection2D(TRAIN_ROOT, transforms=img_transforms, S=S, C=C)
+## Kitti
+if DATASET=='kitti':
+    dataset = KittiDetection2D(TRAIN_ROOT, transforms=img_transforms, S=S, C=C)
+
+
+## VOC
+if DATASET=='voc':
+    dataset = VOCDataset(CSV_PATH, IMAGE_ROOT, LABEL_ROOT)
+
 train_dataset_len = int(TRAIN_VAL_SPLIT*len(dataset))
 val_dataset_len = len(dataset) - train_dataset_len
 train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_dataset_len, val_dataset_len])
-
 train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=PIN_MEMORY, num_workers=NUM_WORKERS, drop_last=True)
 val_dataloader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=PIN_MEMORY, num_workers=NUM_WORKERS, drop_last=True)
 
