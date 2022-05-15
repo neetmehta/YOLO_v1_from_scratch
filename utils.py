@@ -7,6 +7,7 @@ from torchvision.utils import draw_bounding_boxes
 from tqdm import tqdm
 from os.path import join as osp
 from PIL import Image
+import random
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -189,7 +190,7 @@ def eval(dataloader, model, S=(6,20), C=9):
     else:
         return {'map': 0}
 
-def visualize(model, image, S=(6,20), C=9):
+def visualize(model, test_dataset, S=(6,20), C=9):
     """
     input:
         model (Yolo model): Trained yolo model
@@ -198,21 +199,21 @@ def visualize(model, image, S=(6,20), C=9):
     return:
 
     """
-    img_transforms = transforms.Compose(transforms.Resize(S), transforms.ToTensor())
-    to_pil = transforms.ToPILImage()
-    
+    idx = random.randint(0, len(test_dataset))
+    image = test_dataset[idx][0].unsqueeze(0)
+    model = model.cpu()
     model.eval()
-    if isinstance(image, str):
-        image = Image.open(image)
-        image = img_transforms(image)
-        image = image.unsqueeze(0)
-
-    model, image = model.to(device), image.to(device)
     pred = model(image)
-    pred = pred.detach().cpu()
-    boxes = non_max_suppression(pred, S, C, prob_threshold=0.5)
-    boxes = boxes[:,-4:]
-    image = to_pil(image[0], boxes)
-    image.save('vis.jpg')
+    pred = non_max_suppression(pred, prob_threshold=0.7)
+    image_with_bb = draw_bb(image.squeeze(0), pred)
 
-    
+    image_with_bb.save('vis.jpg')
+
+def draw_bb(img, target):
+    to_pil = transforms.ToPILImage()
+    img = (img*255).to(torch.uint8)
+    img_with_bb = img
+    for i in target:
+        box = i[:,-4:]
+        img_with_bb = draw_bounding_boxes(img, box)
+    return to_pil(img_with_bb)
