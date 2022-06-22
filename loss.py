@@ -45,7 +45,7 @@ class YoloLoss(nn.Module):
         ## object loss
         pred_obj = exist_box_identity*(best_box*pred[...,C+5:C+6] + (1-best_box)*pred[..., C:C+1])
 
-        object_loss = self.mse_loss(torch.flatten(pred_obj, 0, -2), torch.flatten(exist_box_identity, 0, -2))
+        object_loss = self.mse_loss(torch.flatten(pred_obj, 0, -2), torch.flatten(exist_box_identity*target[...,C:C+1], 0, -2))
         
         ## no object loss
 
