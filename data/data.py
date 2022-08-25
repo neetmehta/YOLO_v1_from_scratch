@@ -112,14 +112,23 @@ classes = {
 "train"	        :18,
 "tvmonitor"     :19
 }
+color_aug_transforms = transforms.Compose([transforms.ColorJitter(brightness=0.5, hue=0.3),
+                                     transforms.GaussianBlur(kernel_size=(3,3), sigma=(0.1, 5)),
+                                     transforms.RandomAdjustSharpness(sharpness_factor=2),
+                                     transforms.RandomAutocontrast(),
+                                     transforms.RandomEqualize()])
+
+
 class VOC(VOCDetection):
 
-    def __init__(self, datadir, S, C, B=2, image_set='trainval', transform=to_tensor, download=False) -> None:
+    def __init__(self, datadir, S, C, B=2, resize=(448,448), image_set='trainval', transform=to_tensor, download=False, augmentation=True) -> None:
         super(VOC, self).__init__(root=datadir, image_set=image_set, download=download)
         self.S = S
         self.C = C
         self.B = B
         self.transform = transform
+        self.augmentation = augmentation
+        self.resize = transforms.Compose([transforms.Resize(resize)])
 
     def __getitem__(self, index: int):
         """
@@ -129,9 +138,11 @@ class VOC(VOCDetection):
         tgt: torch.tensor (N,S[0],S[1],C+5*B) bbox [x,y,w,h]
         """
         image, target = super().__getitem__(index)
+        if self.augmentation:
+            image = color_aug_transforms(image)
         image = to_tensor(image)
         c, h, w = image.shape 
-        image = self.transform(image)
+        image = self.resize(image)
         object_list = target['annotation']["object"]
 
         bbox = [(classes[i['name']],i['bndbox']) for i in object_list]
@@ -160,7 +171,6 @@ class VOC(VOCDetection):
             tgt[i,j,24] = h_grid
 
         return tgt
-
     @staticmethod
     def _yolo2xml(image, target, S):
         c,h,w = image.shape
@@ -182,6 +192,7 @@ class VOC(VOCDetection):
         target[:,:,23] = xmax
         target[:,:,24] = ymax
         bbox = target[target[:,:,20]>0][:,-4:]
+        scores = target[target[:,:,20]>0][:,20]
         class_no = target[target[:,:,20]>0][:,:-5]
         class_no = torch.where(class_no>0)
         class_no = list(class_no[1])
@@ -190,14 +201,16 @@ class VOC(VOCDetection):
             for i in class_no:
                 if i==value:
                     labels.append(key)
-        
+
+        # bbox_after_nms = nms(bbox, scores, iou_threshold=0.5)
+        # bbox = bbox[bbox_after_nms,:]
         to_pil = transforms.ToPILImage()
         pil = to_pil(image)
         image = torch.from_numpy(np.asarray(pil))
         image = image.permute(2,0,1)
-        image = draw_bb(image, bbox, labels=labels, width=2, font_size=500)
+        image = draw_bb(image, bbox, width=4, font_size=500)
         return image
-        
+
     @staticmethod
     def vis_pred(image, pred, S, threshold=0.5):
         class_no = pred[:,:,:20]
@@ -214,3 +227,5 @@ class VOC(VOCDetection):
         target = torch.cat((class_no, probs, bb), dim=-1)
         image = VOC._yolo2xml(image, target, S)
         return image
+
+    

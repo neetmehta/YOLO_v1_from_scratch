@@ -2,6 +2,7 @@ root : "/datasets"
 ckpt_dir : "ckpt_dir"
 epochs : 200
 learning_rate : 0.00002
+apply_augmentation: True
 batch_size : 28
 num_workers : 2
 pin_memory : True
