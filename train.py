@@ -78,9 +78,8 @@ prev_val_loss = 100000000000
 if RESUME:
     state_dict = torch.load(CKPT_PATH)
     model.load_state_dict(state_dict['model_state_dict'])
-    optimizer.load_state_dict(state_dict['optimizer_state_dict'])
     epoch = state_dict['epoch']+1
-    prev_val_loss = state_dict['loss']
+    prev_val_loss = state_dict['mean_val_loss']
     print(f"Resuming from epoch: {epoch} and loss: {prev_val_loss} and mean_ap: {prev_mean_ap}")
 
 
