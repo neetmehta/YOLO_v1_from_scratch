@@ -5,7 +5,7 @@ from utils import iou
 class YoloLoss(nn.Module):
     def __init__(self, S=(6, 20), B=2, C=9, coord=5, noobj=0.5) -> None:
         super(YoloLoss, self).__init__()
-        self.mse_loss = nn.MSELoss(reduction="mean")
+        self.mse_loss = nn.MSELoss(reduction="sum")
         self.S = S
         self.B = B
         self.C = C
