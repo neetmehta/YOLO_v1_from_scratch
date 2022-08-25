@@ -1,20 +1,17 @@
-images_path : "E:\\Deep Learning Projects\\datasets\\voc\\images"
-label_path : "E:\\Deep Learning Projects\\datasets\\voc\\labels"
-train_csv_path : "E:\\Deep Learning Projects\\datasets\\voc\\100examples.csv"
-val_csv_path : "E:\\Deep Learning Projects\\datasets\\voc\\100examples.csv"
+root : "E:\\Deep Learning Projects\\datasets"
 ckpt_dir : "ckpt_dir"
 epochs : 500
 learning_rate : 0.00002
-batch_size : 16
+batch_size : 1
 num_workers : 0
 pin_memory : True
-train_val_split : 1
+train_val_split : 0.8
 resume : False
 dropout: 0.0
 fcl_out: 496
 ckpt_path : ""
-backbone: darknet
+backbone: "resnet18"
 
 resize : [448,448]
-S: [7,7]
+S: [14,14]
 C: 20

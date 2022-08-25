@@ -20,9 +20,7 @@ print('seed created')
 
 
 training_config = read_yaml(r'yaml/voc.yaml')
-
-IMAGE_ROOT = training_config['images_path']
-LABEL_ROOT = training_config['label_path']
+ROOT = training_config['root']
 
 
 CKPT_DIR = training_config['ckpt_dir']
@@ -53,11 +51,11 @@ print(f"dropout: {training_config['dropout']}")
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 os.makedirs(CKPT_DIR, exist_ok=True)
 
-img_transforms = transforms.Compose([transforms.Resize(RESIZE), transforms.ToTensor()])
+img_transforms = transforms.Compose([transforms.Resize(RESIZE)])
 
 
 ## VOC
-dataset = VOC(IMAGE_ROOT, S=(14,14), C=20, transform=img_transforms)
+dataset = VOC(ROOT, S=(14,14), C=20, transform=img_transforms)
 ds_size = len(dataset)
 train_size = int(ds_size*TRAIN_VAL_SPLIT)
 val_size = ds_size-train_size

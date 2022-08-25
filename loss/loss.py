@@ -5,7 +5,7 @@ from utils import iou
 class YoloLoss(nn.Module):
     def __init__(self, S=(6, 20), B=2, C=9, coord=5, noobj=0.5) -> None:
         super(YoloLoss, self).__init__()
-        self.mse_loss = nn.MSELoss(reduction="sum")
+        self.mse_loss = nn.MSELoss(reduction="mean")
         self.S = S
         self.B = B
         self.C = C
@@ -14,9 +14,7 @@ class YoloLoss(nn.Module):
 
     def forward(self, pred, target):
         C = self.C
-        class_probs = target[..., :C]                              # [N, S[0], s[1], C]
         exist_box_identity = target[..., C:C+1]
-        not_exist_box_identity = 1-exist_box_identity               # [N, S[0], s[1], 1]
         target_box = exist_box_identity * target[..., C+1:]                       # [N, S[0], s[1], 4]
         
         iou_b1 = iou(pred[..., C+1:C+5], target[...,C+1:C+5]).unsqueeze(-1) # [N, S[0], S[1], 1]

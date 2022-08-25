@@ -112,24 +112,31 @@ classes = {
 }
 class VOC(VOCDetection):
 
-    def __init__(self, datadir, S, C, B=2, image_set='train', transform=to_tensor, download=False) -> None:
-        super(VOC, self).__init__(root=datadir, image_set=image_set, download=download, transform=transform)
+    def __init__(self, datadir, S, C, B=2, image_set='trainval', transform=to_tensor, download=False) -> None:
+        super(VOC, self).__init__(root=datadir, image_set=image_set, download=download)
         self.S = S
         self.C = C
         self.B = B
+        self.transform = transform
 
     def __getitem__(self, index: int):
+        """
+        index: int
+
+        image: torch.tensor (N,C,H,W)
+        tgt: torch.tensor (N,S[0],S[1],C+5*B) bbox [x,y,w,h]
+        """
         image, target = super().__getitem__(index)
+        image = to_tensor(image)
         c, h, w = image.shape 
-        print(target)
+        image = self.transform(image)
         object_list = target['annotation']["object"]
-        # print(object_list)
-        # print(h,w)
+
         bbox = [(classes[i['name']],i['bndbox']) for i in object_list]
         bbox = [(i[0],[int(i[1]['xmin']), int(i[1]['ymin']),int(i[1]['xmax']),int(i[1]['ymax'])]) for i in bbox]
         tgt = self._xml2yolo(bbox, h, w)
         # C,Y,X = image.shape
-        return image, bbox, tgt
+        return image, tgt
 
     def _xml2yolo(self, bbox, h, w):
         tgt = torch.zeros((self.S[0], self.S[1], self.C+5))
