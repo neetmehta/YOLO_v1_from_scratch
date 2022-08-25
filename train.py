@@ -80,7 +80,7 @@ if RESUME:
     model.load_state_dict(state_dict['model_state_dict'])
     epoch = state_dict['epoch']+1
     prev_val_loss = state_dict['mean_val_loss']
-    print(f"Resuming from epoch: {epoch} and loss: {prev_val_loss} and mean_ap: {prev_mean_ap}")
+    print(f"Resuming from epoch: {epoch} and loss: {prev_val_loss}")
 
 
 # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
@@ -130,8 +130,8 @@ for epoch in range(epoch, EPOCHS):
         prev_val_loss=sum(mean_val_loss)/len(mean_val_loss)
         state_dict = {"model_state_dict":model.state_dict(),
                      "epoch":epoch,
-                     "mean_val_loss":mean_val_loss,
-                     "mean_train_loss":mean_loss
+                     "mean_val_loss":sum(mean_val_loss)/len(mean_val_loss),
+                     "mean_train_loss":sum(mean_loss)/len(mean_loss)
                      }
         torch.save(state_dict,osp(CKPT_DIR, f"yolo_{BACKBONE}_epoch_{epoch}.ckpt"))
 
