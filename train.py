@@ -117,7 +117,7 @@ for epoch in range(epoch, EPOCHS):
             image, target = image.to(device), target.to(device)
             pred = model(image)
             loss = criterion(pred, target)
-            mean_loss.append(loss.item())
+            mean_val_loss.append(loss.item())
 
             loop.set_description(f"Epoch [{epoch}/{EPOCHS}]")
             loop.set_postfix(loss=loss.item())
