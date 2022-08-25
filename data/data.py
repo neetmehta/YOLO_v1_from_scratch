@@ -8,6 +8,8 @@ import pandas as pd
 from PIL import Image
 from torchvision.datasets import VOCDetection
 import math
+import numpy as np
+from torchvision.utils import draw_bounding_boxes as draw_bb
 
 to_tensor = transforms.Compose([transforms.ToTensor()])
 
@@ -158,3 +160,57 @@ class VOC(VOCDetection):
             tgt[i,j,24] = h_grid
 
         return tgt
+
+    @staticmethod
+    def _yolo2xml(image, target, S):
+        c,h,w = image.shape
+        cell_h = 1./S[0]
+        cell_w = 1./S[1]
+        j = torch.arange(0,14).repeat(14).reshape((14,14))
+        i = j.transpose(1,0)
+        x_grid = (target[:,:,21]*cell_w + j*cell_w)*target[:,:,20]
+        y_grid = (target[:,:,22]*cell_h + i*cell_h)*target[:,:,20]
+        h_grid = target[:,:,24]
+        w_grid = target[:,:,23]
+        xmax = (2*w*x_grid + w_grid*w)/2
+        xmin = (2*w*x_grid - w_grid*w)/2
+        ymax = (2*h*y_grid + h_grid*h)/2
+        ymin = (2*h*y_grid - h_grid*h)/2
+
+        target[:,:,21] = xmin
+        target[:,:,22] = ymin
+        target[:,:,23] = xmax
+        target[:,:,24] = ymax
+        bbox = target[target[:,:,20]>0][:,-4:]
+        class_no = target[target[:,:,20]>0][:,:-5]
+        class_no = torch.where(class_no>0)
+        class_no = list(class_no[1])
+        labels = []
+        for key, value in classes.items():
+            for i in class_no:
+                if i==value:
+                    labels.append(key)
+        
+        to_pil = transforms.ToPILImage()
+        pil = to_pil(image)
+        image = torch.from_numpy(np.asarray(pil))
+        image = image.permute(2,0,1)
+        image = draw_bb(image, bbox, labels=labels, width=2, font_size=500)
+        return image
+        
+    @staticmethod
+    def vis_pred(image, pred, S, threshold=0.5):
+        class_no = pred[:,:,:20]
+        bb1 = pred[:,:,20:21]
+        bb2 = pred[:,:,25:26]
+        box1 = pred[:,:,21:25]
+        box2 = pred[:,:,26:30]
+        bb = torch.cat((bb1,bb2), dim=-1)
+        probs ,bb = torch.max(bb, dim=-1)
+        bb.unsqueeze_(-1)
+        probs.unsqueeze_(-1)
+        bb = box2*bb + box1*(1-bb)
+        probs[probs<threshold]=0
+        target = torch.cat((class_no, probs, bb), dim=-1)
+        image = VOC._yolo2xml(image, target, S)
+        return image

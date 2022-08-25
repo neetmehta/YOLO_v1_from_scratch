@@ -122,13 +122,18 @@ for epoch in range(epoch, EPOCHS):
             loop.set_description(f"Epoch [{epoch}/{EPOCHS}]")
             loop.set_postfix(loss=loss.item())
 
-    print("\n=================================")
+    print("=================================")
     print(f"Mean validation loss was {sum(mean_val_loss)/len(mean_val_loss)}")
-    print("\n=================================")
+    print("=================================")
 
     if epoch%10==0 or prev_val_loss>sum(mean_val_loss)/len(mean_val_loss):
         prev_val_loss=sum(mean_val_loss)/len(mean_val_loss)
-        torch.save(model,osp(CKPT_DIR, f"yolo_{BACKBONE}_epoch_{epoch}.ckpt"))
+        state_dict = {"model_state_dict":model.state_dict(),
+                     "epoch":epoch,
+                     "mean_val_loss":mean_val_loss,
+                     "mean_train_loss":mean_loss
+                     }
+        torch.save(state_dict,osp(CKPT_DIR, f"yolo_{BACKBONE}_epoch_{epoch}.ckpt"))
 
 
 
