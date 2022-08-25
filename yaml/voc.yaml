@@ -1,17 +1,17 @@
-root : "E:\\Deep Learning Projects\\datasets"
+root : "/datasets"
 ckpt_dir : "ckpt_dir"
-epochs : 500
+epochs : 200
 learning_rate : 0.00002
-batch_size : 1
-num_workers : 0
+batch_size : 16
+num_workers : 2
 pin_memory : True
 train_val_split : 0.8
 resume : False
 dropout: 0.0
 fcl_out: 496
 ckpt_path : ""
-backbone: "resnet18"
-
+backbone: "resnet50"
+download: False
 resize : [448,448]
 S: [14,14]
 C: 20

@@ -22,7 +22,7 @@ print('seed created')
 training_config = read_yaml(r'yaml/voc.yaml')
 ROOT = training_config['root']
 
-
+DOWNLOAD=training_config['download']
 CKPT_DIR = training_config['ckpt_dir']
 EPOCHS = training_config['epochs']
 LEARNING_RATE = training_config['learning_rate']
@@ -55,7 +55,7 @@ img_transforms = transforms.Compose([transforms.Resize(RESIZE)])
 
 
 ## VOC
-dataset = VOC(ROOT, S=(14,14), C=20, transform=img_transforms)
+dataset = VOC(ROOT, S=(14,14), C=20, transform=img_transforms, download=DOWNLOAD)
 ds_size = len(dataset)
 train_size = int(ds_size*TRAIN_VAL_SPLIT)
 val_size = ds_size-train_size
