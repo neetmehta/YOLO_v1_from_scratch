@@ -7,9 +7,9 @@ from tqdm import tqdm
 from os.path import join as osp
 import os
 
-from loss import YoloLoss
+from loss.loss import YoloLoss
 from model import get_model
-from data import KittiDetection2D, VOCDataset
+from data.data import KittiDetection2D, VOCDataset
 from utils import *
 import random
 
