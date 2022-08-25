@@ -26,7 +26,7 @@ class YOLOv1(nn.Module):
         return x
 
     def _create_fcl(self, S: tuple, B: int, C: int, fcl_out: int=4096, backbone_out_channels=1024, dropout=0.0):
-        return nn.Sequential(nn.Flatten(), nn.Linear(backbone_out_channels*S[0]*S[1], fcl_out), nn.Dropout(dropout), nn.LeakyReLU(0.1), nn.Linear(fcl_out, S[0]*S[1]*(self.C + self.B*5)))
+        return nn.Sequential(nn.Flatten(), nn.Linear(backbone_out_channels*S[0]*S[1], fcl_out), nn.Dropout(dropout), nn.LeakyReLU(0.1), nn.Linear(fcl_out, S[0]*S[1]*(self.C + self.B*5)), nn.Sigmoid())
 
 def get_model(backbone: str, S, C, fcl_out: int=496, dropout=0.0, pretrained=True):
     if backbone == 'darknet':
