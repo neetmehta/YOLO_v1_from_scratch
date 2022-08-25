@@ -122,9 +122,9 @@ for epoch in range(epoch, EPOCHS):
             loop.set_description(f"Epoch [{epoch}/{EPOCHS}]")
             loop.set_postfix(loss=loss.item())
 
-    print("\n=================================\n")
+    print("\n=================================")
     print(f"Mean validation loss was {sum(mean_val_loss)/len(mean_val_loss)}")
-    print("\n=================================\n")
+    print("\n=================================")
 
     if epoch%10==0 or prev_val_loss>sum(mean_val_loss)/len(mean_val_loss):
         prev_val_loss=sum(mean_val_loss)/len(mean_val_loss)
