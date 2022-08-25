@@ -8,8 +8,8 @@ from os.path import join as osp
 import os
 
 from loss.loss import YoloLoss
-from model import get_model
-from data.data import KittiDetection2D, VOCDataset
+from model.yolo import get_model
+from data.data import VOC
 from utils import *
 import random
 
@@ -17,21 +17,13 @@ random.seed(123)
 torch.manual_seed(123)
 print('seed created')
 
-DATASET = 'voc'
-
-if DATASET=='kitti':
-    training_config = read_yaml(r'yaml/kitti.yaml')
-    TRAIN_ROOT = training_config['train_images_path']
-    TEST_ROOT = training_config['test_image_path']
 
 
-if DATASET=='voc':
-    training_config = read_yaml(r'yaml/voc.yaml')
+training_config = read_yaml(r'yaml/voc.yaml')
 
-    IMAGE_ROOT = training_config['images_path']
-    LABEL_ROOT = training_config['label_path']
-    TRAIN_CSV_PATH = training_config['train_csv_path']
-    VAL_CSV_PATH = training_config['val_csv_path']
+IMAGE_ROOT = training_config['images_path']
+LABEL_ROOT = training_config['label_path']
+
 
 CKPT_DIR = training_config['ckpt_dir']
 EPOCHS = training_config['epochs']
@@ -43,6 +35,7 @@ TRAIN_VAL_SPLIT = training_config['train_val_split']
 RESUME = training_config['resume']
 CKPT_PATH = training_config['ckpt_path']
 RESIZE = tuple(training_config['resize'])
+BACKBONE = training_config['backbone']
 S = tuple(training_config['S'])
 B = 2
 C = training_config['C']
@@ -62,17 +55,13 @@ os.makedirs(CKPT_DIR, exist_ok=True)
 
 img_transforms = transforms.Compose([transforms.Resize(RESIZE), transforms.ToTensor()])
 
-## Kitti
-if DATASET=='kitti':
-    dataset = KittiDetection2D(TRAIN_ROOT, transforms=img_transforms, S=S, C=C)
-    train_dataset_len = int(TRAIN_VAL_SPLIT*len(dataset))
-    val_dataset_len = len(dataset) - train_dataset_len
-    train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_dataset_len, val_dataset_len])
 
 ## VOC
-if DATASET=='voc':
-    train_dataset = VOCDataset(TRAIN_CSV_PATH, IMAGE_ROOT, LABEL_ROOT, transform=img_transforms)
-    val_dataset = VOCDataset(VAL_CSV_PATH, IMAGE_ROOT, LABEL_ROOT, transform=img_transforms)
+dataset = VOC(IMAGE_ROOT, S=(14,14), C=20, transform=img_transforms)
+ds_size = len(dataset)
+train_size = int(ds_size*TRAIN_VAL_SPLIT)
+val_size = ds_size-train_size
+train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
 
 
 train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=PIN_MEMORY, num_workers=NUM_WORKERS, drop_last=True)
@@ -86,17 +75,17 @@ criterion = YoloLoss(S=S, C=C)
 optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 epoch = 0
 prev_mean_ap = 0
+prev_val_loss = 100000000000
 if RESUME:
     state_dict = torch.load(CKPT_PATH)
     model.load_state_dict(state_dict['model_state_dict'])
     optimizer.load_state_dict(state_dict['optimizer_state_dict'])
     epoch = state_dict['epoch']+1
     prev_val_loss = state_dict['loss']
-    prev_mean_ap = state_dict['map']
     print(f"Resuming from epoch: {epoch} and loss: {prev_val_loss} and mean_ap: {prev_mean_ap}")
 
 
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
+# scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
 
 
 for epoch in range(epoch, EPOCHS):
@@ -120,16 +109,30 @@ for epoch in range(epoch, EPOCHS):
     print(f"Mean loss was {sum(mean_loss)/len(mean_loss)}")
 
     print("starting validation ...")
-    mean_ap = eval(val_dataloader, model, S=S, C=C)
-    print(f'Mean average precision: {mean_ap["map"]}')
-    if mean_ap['map'] > prev_mean_ap or epoch%20==0:
-        state_dict = {'epoch': epoch,
-                      'loss': sum(mean_loss)/len(mean_loss), 
-                      'model_state_dict': model.state_dict(), 
-                      'optimizer_state_dict': optimizer.state_dict(),
-                      'map': mean_ap['map']}
-        prev_mean_ap = mean_ap['map']
-        path = osp(CKPT_DIR,f"yolo_{training_config['backbone']}_checkpoint_{state_dict['epoch']}.ckpt")
-        save_checkpoint(state_dict, path)
+    print("\n")
+    loop = tqdm(val_dataloader)
+    mean_val_loss = []
+    model.eval()
+    for image, target in loop:
+        
+        with torch.no_grad():
+            image, target = image.to(device), target.to(device)
+            pred = model(image)
+            loss = criterion(pred, target)
+            mean_loss.append(loss.item())
+
+            loop.set_description(f"Epoch [{epoch}/{EPOCHS}]")
+            loop.set_postfix(loss=loss.item())
+
+    print("\n=================================\n")
+    print(f"Mean validation loss was {sum(mean_val_loss)/len(mean_val_loss)}")
+    print("\n=================================\n")
+
+    if epoch%10==0 or prev_val_loss>sum(mean_val_loss)/len(mean_val_loss):
+        prev_val_loss=sum(mean_val_loss)/len(mean_val_loss)
+        torch.save(model,osp(CKPT_DIR, f"yolo_{BACKBONE}_epoch_{epoch}.ckpt"))
+
+
+
 
 
