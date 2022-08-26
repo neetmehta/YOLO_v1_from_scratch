@@ -224,6 +224,7 @@ class VOC(VOCDetection):
         probs.unsqueeze_(-1)
         bb = box2*bb + box1*(1-bb)
         probs[probs<threshold]=0
+        probs[probs>=threshold]=1
         target = torch.cat((class_no, probs, bb), dim=-1)
         image = VOC._yolo2xml(image, target, S)
         return image
