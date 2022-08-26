@@ -1,3 +1,5 @@
+.ckpt
+ckpt_dir/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
