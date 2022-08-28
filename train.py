@@ -91,7 +91,7 @@ for epoch in range(epoch, EPOCHS):
     loop = tqdm(train_dataloader)
     mean_loss = []
     model.train()
-    for image, target in loop:
+    for image, target, _ in loop:
         
         image, target = image.to(device), target.to(device)
         pred = model(image)
@@ -104,38 +104,39 @@ for epoch in range(epoch, EPOCHS):
 
         loop.set_description(f"Epoch [{epoch}/{EPOCHS}]")
         loop.set_postfix(loss=loss.item())
+        break
     
     print(f"Mean loss was {sum(mean_loss)/len(mean_loss)}")
 
     print("starting validation ...")
     print("\n")
-    loop = tqdm(val_dataloader)
-    mean_val_loss = []
-    model.eval()
-    for image, target in loop:
+    # loop = tqdm(val_dataloader)
+    # mean_val_loss = []
+    # model.eval()
+    # for image, target in loop:
         
-        with torch.no_grad():
-            image, target = image.to(device), target.to(device)
-            pred = model(image)
-            loss = criterion(pred, target)
-            mean_val_loss.append(loss.item())
+    #     with torch.no_grad():
+    #         image, target = image.to(device), target.to(device)
+    #         pred = model(image)
+    #         loss = criterion(pred, target)
+    #         mean_val_loss.append(loss.item())
 
-            loop.set_description(f"Epoch [{epoch}/{EPOCHS}]")
-            loop.set_postfix(loss=loss.item())
+    #         loop.set_description(f"Epoch [{epoch}/{EPOCHS}]")
+    #         loop.set_postfix(loss=loss.item())
 
-    print("=================================")
-    print(f"Mean validation loss was {sum(mean_val_loss)/len(mean_val_loss)}")
-    print("=================================")
+    # print("=================================")
+    # print(f"Mean validation loss was {sum(mean_val_loss)/len(mean_val_loss)}")
+    # print("=================================")
 
-    if epoch%10==0 or prev_val_loss>sum(mean_val_loss)/len(mean_val_loss):
-        prev_val_loss=sum(mean_val_loss)/len(mean_val_loss)
-        state_dict = {"model_state_dict":model.state_dict(),
-                     "epoch":epoch,
-                     "mean_val_loss":sum(mean_val_loss)/len(mean_val_loss),
-                     "mean_train_loss":sum(mean_loss)/len(mean_loss)
-                     }
-        torch.save(state_dict,osp(CKPT_DIR, f"yolo_{BACKBONE}_epoch_{epoch}.ckpt"))
-
+    # if epoch%10==0 or prev_val_loss>sum(mean_val_loss)/len(mean_val_loss):
+    #     prev_val_loss=sum(mean_val_loss)/len(mean_val_loss)
+    #     state_dict = {"model_state_dict":model.state_dict(),
+    #                  "epoch":epoch,
+    #                  "mean_val_loss":sum(mean_val_loss)/len(mean_val_loss),
+    #                  "mean_train_loss":sum(mean_loss)/len(mean_loss)
+    #                  }
+    #     torch.save(state_dict,osp(CKPT_DIR, f"yolo_{BACKBONE}_epoch_{epoch}.ckpt"))
+    mean_ap = eval(val_dataloader, model)
 
 
 

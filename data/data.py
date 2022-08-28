@@ -146,10 +146,18 @@ class VOC(VOCDetection):
         object_list = target['annotation']["object"]
 
         bbox = [(classes[i['name']],i['bndbox']) for i in object_list]
-        bbox = [(i[0],[int(i[1]['xmin']), int(i[1]['ymin']),int(i[1]['xmax']),int(i[1]['ymax'])]) for i in bbox]
-        tgt = self._xml2yolo(bbox, h, w)
+        tgt_bbox = [(i[0],[int(i[1]['xmin']), int(i[1]['ymin']),int(i[1]['xmax']),int(i[1]['ymax'])]) for i in bbox]
+        map_bb = []
+        map_classes = []
+        for i in bbox:
+            map_bb.append([int(i[1]['xmin']), int(i[1]['ymin']),int(i[1]['xmax']),int(i[1]['ymax'])])
+            map_classes.append(i[0])
+
+        map_bb = torch.FloatTensor(map_bb)
+        map_target = {'boxes': map_bb, 'labels':torch.tensor(map_classes, dtype=torch.uint8)}
+        tgt = self._xml2yolo(tgt_bbox, h, w)
         # C,Y,X = image.shape
-        return image, tgt
+        return image, tgt, map_target
 
     def _xml2yolo(self, bbox, h, w):
         tgt = torch.zeros((self.S[0], self.S[1], self.C+5))
@@ -174,6 +182,7 @@ class VOC(VOCDetection):
     @staticmethod
     def _yolo2xml(image, target, S):
         c,h,w = image.shape
+        pred_dict = {}
         cell_h = 1./S[0]
         cell_w = 1./S[1]
         j = torch.arange(0,14).repeat(14).reshape((14,14))
@@ -194,6 +203,8 @@ class VOC(VOCDetection):
         bbox = target[target[:,:,20]>0][:,-4:]
         scores = target[target[:,:,20]>0][:,20]
         class_no = target[target[:,:,20]>0][:,:-5]
+        classno = torch.argmax(class_no, dim = -1)
+
         class_no = torch.where(class_no>0)
         class_no = list(class_no[1])
         labels = []
@@ -209,7 +220,12 @@ class VOC(VOCDetection):
         image = torch.from_numpy(np.asarray(pil))
         image = image.permute(2,0,1)
         image = draw_bb(image, bbox, width=4, font_size=500)
-        return image
+        pred_dict['boxes'] = bbox
+        pred_dict['scores'] = scores
+        pred_dict['labels'] = classno
+        return image, pred_dict
+
+
 
     @staticmethod
     def vis_pred(image, pred, S, threshold=0.5):
@@ -226,7 +242,7 @@ class VOC(VOCDetection):
         probs[probs<threshold]=0
         probs[probs>=threshold]=1
         target = torch.cat((class_no, probs, bb), dim=-1)
-        image = VOC._yolo2xml(image, target, S)
-        return image
+        image, pred_dict = VOC._yolo2xml(image, target, S)
+        return image, pred_dict
 
     

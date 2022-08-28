@@ -154,41 +154,41 @@ def mAP_tensor(tensor, C=9, target=False):
 def save_checkpoint(state_dict, path):
     torch.save(state_dict, path)
 
-def eval(dataloader, model, S=(6,20), C=9):
+# def eval(dataloader, model, S=(6,20), C=9):
 
-    model.eval()
-    loop = tqdm(dataloader)
-    batch_size = dataloader.batch_size
-    mean_avg_precision = MeanAveragePrecision()
-    pred_list = []
-    target_list = []
+#     model.eval()
+#     loop = tqdm(dataloader)
+#     batch_size = dataloader.batch_size
+#     mean_avg_precision = MeanAveragePrecision()
+#     pred_list = []
+#     target_list = []
 
-    for image, target in loop:
+#     for image, target in loop:
 
-        image = image.to(device)
-        pred = model(image)
-        pred = pred.detach().cpu()
-        pred = non_max_suppression(pred, S, C)
-        target = non_max_suppression(target, S, C, target=True)
+#         image = image.to(device)
+#         pred = model(image)
+#         pred = pred.detach().cpu()
+#         pred = non_max_suppression(pred, S, C)
+#         target = non_max_suppression(target, S, C, target=True)
 
-        for i in range(batch_size):
-            if pred[i].shape[0]==0:
-                continue
+#         for i in range(batch_size):
+#             if pred[i].shape[0]==0:
+#                 continue
 
-            pred_dict = mAP_tensor(pred[i], C)
-            if len(target[i])==0:
-                continue
-            target_dict = mAP_tensor(target[i], C, target=True)
-            pred_list.append(pred_dict)
-            target_list.append(target_dict)
-    model.train()
-    if len(pred_list)>0:
-        mean_avg_precision.update(pred_list, target_list)
-        mean_ap = mean_avg_precision.compute()
-        return mean_ap
+#             pred_dict = mAP_tensor(pred[i], C)
+#             if len(target[i])==0:
+#                 continue
+#             target_dict = mAP_tensor(target[i], C, target=True)
+#             pred_list.append(pred_dict)
+#             target_list.append(target_dict)
+#     model.train()
+#     if len(pred_list)>0:
+#         mean_avg_precision.update(pred_list, target_list)
+#         mean_ap = mean_avg_precision.compute()
+#         return mean_ap
 
-    else:
-        return {'map': 0}
+#     else:
+#         return {'map': 0}
 
 def visualize(model, test_dataset, S=(6,20), C=9):
     """
@@ -217,3 +217,30 @@ def draw_bb(img, target):
         box = i[:,-4:]
         img_with_bb = draw_bounding_boxes(img, box)
     return to_pil(img_with_bb)
+
+import torch
+from torchmetrics.detection.mean_ap import MeanAveragePrecision
+from tqdm import tqdm
+from data.data import VOC
+
+device = 'cuda' if torch.cuda.is_available() else 'cpu' 
+
+def eval(val_dataloader, model):
+
+    mean_ap = MeanAveragePrecision()
+    loop = tqdm(val_dataloader)
+    preds = []
+    targets = []
+    model.eval()
+    for image, _, map_target in loop:
+        with torch.no_grad():
+            image = image.to(device)
+            pred = model(image)
+            pred.squeeze_(0)
+            pred_image, pred_dict = VOC.vis_pred(image.cpu().squeeze(0), pred.cpu(), (14,14), threshold=0.5)
+            pred_dict = [pred_dict]
+            map_target = [map_target]
+            mean_ap.update(pred_dict, map_target)
+
+    mAP = mean_ap.compute()
+    return mAP
